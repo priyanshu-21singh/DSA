@@ -1,293 +1,192 @@
-#include <iostream>
+#include <bits/stdc++.h>
+using namespace std;
 
-class Node {
-public:
-    int data;
-    Node* next;
-    // constructor initializers..
-    Node(int val) : data(val), next(nullptr) {}
-};
-
-class LinkedList {
+// Define the DynamicArray class
+class DynamicArray {
 private:
-    Node* head;
-    Node* tail;
+    int* data;
+    int capacity;
     int size;
+    int resize_factor;
 
-public:
-    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
-//Destructor to prevent memory leaks...
-    ~LinkedList() {
-        Node* current = head;
-        while (current != nullptr) {
-            //Before deleting the current node, the destructor stores the pointer to the next node in a temporary variable next
-            Node* next = current->next;
-            delete current;
-            current = next;
+    void resize(int new_capacity) {
+        int* new_data = new int[new_capacity];
+        for (int i = 0; i < size; ++i) {
+            new_data[i] = data[i];
         }
+        delete[] data;
+        data = new_data;
+        capacity = new_capacity;
     }
 
-    void insert(int index, int value) {
+public:
+    DynamicArray(int initial_capacity = 2, int resize_factor = 2)
+        : capacity(initial_capacity), size(0), resize_factor(resize_factor) {
+        data = new int[capacity];
+    }
+
+    ~DynamicArray() {
+        delete[] data;
+    }
+
+    void insert(int index, int element) {
         if (index < 0 || index > size) {
-            std::cout << "Index out of space\n";
-            return;
+            throw std::out_of_range("index out of size");
         }
-        Node* newNode = new Node(value);
-        if (index == 0) {
-            newNode->next = head;
-            head = newNode;
-            if (size == 0) {
-                tail = head;
-            }
-        } else {
-            Node* current = head;
-            for (int i = 0; i < index - 1; ++i) {
-                current = current->next;
-            }
-            newNode->next = current->next;
-            current->next = newNode;
-            if (newNode->next == nullptr) {
-                tail = newNode;
-            }
+        if (size == capacity) {
+            resize(capacity * resize_factor);
         }
+        // this willshift elemrnt to right ...
+        for (int i = size; i > index; --i) {
+            data[i] = data[i - 1];
+        }
+        data[index] = element;
         ++size;
     }
 
-    void remove(int index) {
+    void erase(int index) {
         if (index < 0 || index >= size) {
-            std::cout << "Index out of space\n";
-            return;
+            throw std::out_of_range("index out of size");
         }
-        Node* toDelete = head;
-        if (index == 0) {
-            head = head->next;
-            if (head == nullptr) {
-                tail = nullptr;
-            }
-        } else {
-            Node* current = head;
-            for (int i = 0; i < index - 1; ++i) {
-                current = current->next;
-            }
-            toDelete = current->next;
-            current->next = toDelete->next;
-            if (current->next == nullptr) {
-                tail = current;
-            }
+        // this shift the arrayt  to left.... it will fill gap 
+        for (int i = index; i < size - 1; ++i) {
+            data[i] = data[i + 1];
         }
-        delete toDelete;
         --size;
+        if (size < capacity / resize_factor) {
+            resize(capacity / resize_factor);
+        }
     }
 
-    int getSize() const {
+    int get_size() const {
         return size;
     }
 
-    bool isEmpty() const {
+    bool is_empty() const {
         return size == 0;
     }
 
-    void rotateRight(int k) {
-        if (size <= 1 || k % size == 0) return;
+    void rotate(int k) {
+        if (size == 0) return;
         k = k % size;
-        Node* current = head;
-        for (int i = 0; i < size - k - 1; ++i) {
-            current = current->next;
-        }
-        Node* newHead = current->next;
-        current->next = nullptr;
-        tail->next = head;
-        head = newHead;
-        current = head;
-        while (current->next != nullptr) {
-            current = current->next;
-        }
-        tail = current;
+        std::reverse(data, data + size);
+        std::reverse(data, data + k);
+        std::reverse(data + k, data + size);
     }
 
     void reverse() {
-        if (size <= 1) return;
-        Node* prev = nullptr;
-        Node* current = head;
-        Node* next = nullptr;
-        tail = head;
-        while (current != nullptr) {
-            next = current->next;
-            current->next = prev;
-            prev = current;
-            current = next;
-        }
-        head = prev;
-    }
-    
-
-    void append(int value) {
-        Node* newNode = new Node(value);
-        if (tail != nullptr) {
-            tail->next = newNode;
-            tail = newNode;
-        } else {
-            head = tail = newNode;
-        }
-        ++size;
+        std::reverse(data, data + size);
     }
 
-    void prepend(int value) {
-        Node* newNode = new Node(value);
-        newNode->next = head;
-        head = newNode;
+    void append(int element) {
+        if (size == capacity) {
+            resize(capacity * resize_factor);
+        }
+        data[size++] = element;
+    }
+
+    void prepend(int element) {
+        insert(0, element);
+    }
+
+    void merge(const DynamicArray& other) {
+        for (int i = 0; i < other.size; ++i) {
+            append(other.data[i]);
+        }
+    }
+
+    DynamicArray interleave(const DynamicArray& other) const {
+        DynamicArray new_array;
+        int i = 0, j = 0;
+        while (i < size || j < other.size) {
+            if (i < size) {
+                new_array.append(data[i++]);
+            }
+            if (j < other.size) {
+                new_array.append(other.data[j++]);
+            }
+        }
+        return new_array;
+    }
+
+    int get_middle_element() const {
         if (size == 0) {
-            tail = head;
+            throw std::out_of_range("Empty array");
         }
-        ++size;
+        return data[size / 2];
     }
 
-    void merge(LinkedList& other) {
-        if (other.isEmpty()) return;
-        if (isEmpty()) {
-            head = other.head;
-            tail = other.tail;
-        } else {
-            tail->next = other.head;
-            tail = other.tail;
-        }
-        size += other.size;
-        other.head = other.tail = nullptr;
-        other.size = 0;
-    }
-
-    void interleave(LinkedList& other) {
-        Node* p1 = head;
-        Node* p2 = other.head;
-        Node* p1Next = nullptr;
-        Node* p2Next = nullptr;
-        while (p1 != nullptr && p2 != nullptr) {
-            p1Next = p1->next;
-            p2Next = p2->next;
-            p1->next = p2;
-            if (p1Next != nullptr) {
-                p2->next = p1Next;
+    int index_of(int element) const {
+        for (int i = 0; i < size; ++i) {
+            if (data[i] == element) {
+                return i;
             }
-            p1 = p1Next;
-            p2 = p2Next;
-        }
-        if (p1 == nullptr && p2 != nullptr) {
-            tail->next = p2;
-            tail = other.tail;
-        }
-        size += other.size;
-        other.head = other.tail = nullptr;
-        other.size = 0;
-    }
-
-    int getMiddle() const {
-        if (isEmpty()) {
-            std::cout << "List is empty\n";
-            return -1;
-        }
-        Node* slow = head;
-        Node* fast = head;
-        while (fast != nullptr && fast->next != nullptr) {
-            slow = slow->next;
-            fast = fast->next->next;
-        }
-        return slow->data;
-    }
-
-    int indexOf(int value) const {
-        Node* current = head;
-        int index = 0;
-        while (current != nullptr) {
-            if (current->data == value) {
-                return index;
-            }
-            current = current->next;
-            ++index;
         }
         return -1;
     }
 
-    void split(int index, LinkedList& list1, LinkedList& list2) {
-        if (index < 0 || index >= size) {
-            std::cout << "Index out of bounds\n";
-            return;
+    std::pair<DynamicArray, DynamicArray> split(int index) const {
+        if (index < 0 || index > size) {
+            throw std::out_of_range("Index out of bounds");
         }
-        list1 = LinkedList();
-        list2 = LinkedList();
-        Node* current = head;
+        DynamicArray first_half;
+        DynamicArray second_half;
         for (int i = 0; i < index; ++i) {
-            list1.append(current->data);
-            current = current->next;
+            first_half.append(data[i]);
         }
-        while (current != nullptr) {
-            list2.append(current->data);
-            current = current->next;
+        for (int i = index; i < size; ++i) {
+            second_half.append(data[i]);
         }
+        return std::make_pair(first_half, second_half);
     }
 
-    void printList() const {
-        Node* current = head;
-        while (current != nullptr) {
-            std::cout << current->data << " ";
-            current = current->next;
+    void print() const {
+        for (int i = 0; i < size; ++i) {
+            std::cout << data[i] << " ";
         }
         std::cout << std::endl;
     }
 };
 
+// Main function to test the DynamicArray class
 int main() {
-    LinkedList list;
-    list.append(1);
-    list.append(2);
-    list.append(3);
-    list.append(4);
-    list.append(5);
+    DynamicArray array;
+    array.append(1);
+    array.append(2);
+    array.append(3);
+    array.prepend(0);
+    array.insert(2, 1.5);
+    std::cout << "Array: ";
+    array.print();
+    std::cout << "Size: " << array.get_size() << std::endl;
+    std::cout << "Is empty: " << (array.is_empty() ? "Yes" : "No") << std::endl;
+    array.erase(2);
+    std::cout << "Array after deletion: ";
+    array.print();
+    array.rotate(2);
+    std::cout << "Array after rotation: ";
+    array.print();
+    array.reverse();
+    std::cout << "Array after reversal: ";
+    array.print();
+    DynamicArray other;
+    other.append(4);
+    other.append(5);
+    array.merge(other);
+    std::cout << "Array after merge: ";
+    array.print();
+    std::cout << "Middle element: " << array.get_middle_element() << std::endl;
+    std::cout << "Index of 3: " << array.index_of(3) << std::endl;
+    
+    // Unpack the split result without structured bindings
+    std::pair<DynamicArray, DynamicArray> split_result = array.split(3);
+    DynamicArray first_half = split_result.first;
+    DynamicArray second_half = split_result.second;
 
-    std::cout << "Original List: ";
-    list.printList();
-
-    list.insert(2, 99);
-    std::cout << "After inserting 99 at index 2: ";
-    list.printList();
-
-    list.remove(3);
-    std::cout << "After removing element at index 3: ";
-    list.printList();
-
-    std::cout << "List size: " << list.getSize() << std::endl;
-    std::cout << "Is list empty? " << (list.isEmpty() ? "Yes" : "No") << std::endl;
-
-    list.rotateRight(2);
-    std::cout << "After rotating right by 2: ";
-    list.printList();
-
-    list.reverse();
-    std::cout << "After reversing the list: ";
-    list.printList();
-
-    list.prepend(100);
-    std::cout << "After prepending 100: ";
-    list.printList();
-
-    LinkedList otherList;
-    otherList.append(6);
-    otherList.append(7);
-    otherList.append(8);
-
-    list.merge(otherList);
-    std::cout << "After merging with another list: ";
-    list.printList();
-
-    LinkedList list1, list2;
-    list.split(3, list1, list2);
-    std::cout << "After splitting at index 3: \n";
-    std::cout << "List 1: ";
-    list1.printList();
-    std::cout << "List 2: ";
-    list2.printList();
-
-    std::cout << "Middle element: " << list.getMiddle() << std::endl;
-    std::cout << "Index of 99: " << list.indexOf(99) << std::endl;
+    std::cout << "First half: ";
+    first_half.print();
+    std::cout << "Second half: ";
+    second_half.print();
 
     return 0;
 }
