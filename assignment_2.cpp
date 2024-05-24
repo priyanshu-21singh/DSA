@@ -1,7 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-// Define the DynamicArray class
+
 class DynamicArray {
 private:
     int* data;
@@ -148,7 +148,7 @@ public:
     }
 };
 
-// Main function to test the DynamicArray class
+//  test the DynamicArray class
 int main() {
     DynamicArray array;
     array.append(1);
@@ -178,7 +178,7 @@ int main() {
     std::cout << "Middle element: " << array.get_middle_element() << std::endl;
     std::cout << "Index of 3: " << array.index_of(3) << std::endl;
     
-    // Unpack the split result without structured bindings
+    
     std::pair<DynamicArray, DynamicArray> split_result = array.split(3);
     DynamicArray first_half = split_result.first;
     DynamicArray second_half = split_result.second;
